@@ -91,7 +91,7 @@ class BrandController extends Controller
             'country' => ['sometimes', 'nullable', 'string', 'max:100'],
             'status' => ['sometimes', 'string', 'in:active,inactive'],
         ];
-
+        
         return $request->validate($rules);
     }
 }
