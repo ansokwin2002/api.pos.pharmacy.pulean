@@ -6,6 +6,8 @@ use App\Http\Controllers\PodPatientController;
 use App\Http\Controllers\DrugController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\PatientHistoryController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -58,4 +60,13 @@ Route::prefix('brands')->group(function () {
     Route::put('/{brand}', [BrandController::class, 'update']);
     Route::patch('/{brand}', [BrandController::class, 'update']);
     Route::delete('/{brand}', [BrandController::class, 'destroy']);
+});
+
+Route::prefix('patient-histories')->group(function () {
+    Route::get('/', [PatientHistoryController::class, 'index']);
+    Route::post('/', [PatientHistoryController::class, 'store']);
+    Route::get('/{patientHistory}', [PatientHistoryController::class, 'show']);
+    Route::put('/{patientHistory}', [PatientHistoryController::class, 'update']);
+    Route::patch('/{patientHistory}', [PatientHistoryController::class, 'update']);
+    Route::delete('/{patientHistory}', [PatientHistoryController::class, 'destroy']);
 });
