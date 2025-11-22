@@ -7,6 +7,7 @@ use App\Http\Controllers\DrugController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\PatientHistoryController;
+use App\Http\Controllers\TempPrescriptionController;
 
 
 /*
@@ -65,8 +66,18 @@ Route::prefix('brands')->group(function () {
 Route::prefix('patient-histories')->group(function () {
     Route::get('/', [PatientHistoryController::class, 'index']);
     Route::post('/', [PatientHistoryController::class, 'store']);
+    Route::get('/patient/{patientId}', [PatientHistoryController::class, 'getByPatientId']);
     Route::get('/{patientHistory}', [PatientHistoryController::class, 'show']);
     Route::put('/{patientHistory}', [PatientHistoryController::class, 'update']);
     Route::patch('/{patientHistory}', [PatientHistoryController::class, 'update']);
     Route::delete('/{patientHistory}', [PatientHistoryController::class, 'destroy']);
+});
+
+Route::prefix('temp-prescriptions')->group(function () {
+    Route::get('/', [TempPrescriptionController::class, 'index']);
+    Route::post('/', [TempPrescriptionController::class, 'store']);
+    Route::get('/{tempPrescription}', [TempPrescriptionController::class, 'show']);
+    Route::put('/{tempPrescription}', [TempPrescriptionController::class, 'update']);
+    Route::patch('/{tempPrescription}', [TempPrescriptionController::class, 'update']);
+    Route::delete('/{tempPrescription}', [TempPrescriptionController::class, 'destroy']);
 });

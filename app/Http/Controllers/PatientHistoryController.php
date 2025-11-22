@@ -53,4 +53,23 @@ class PatientHistoryController extends Controller
     {
         //
     }
+
+    /**
+     * Get patient history by patient ID.
+     */
+    public function getByPatientId(string $patientId)
+    {
+        // Query patient histories where json_data->patient->id matches the patient ID
+        $histories = PatientHistory::whereRaw("JSON_EXTRACT(json_data, '$.patient.id') = ?", [$patientId])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        if ($histories->isEmpty()) {
+            return response()->json([
+                'message' => 'No patient history found for patient ID: ' . $patientId
+            ], 404);
+        }
+
+        return response()->json($histories, 200);
+    }
 }
