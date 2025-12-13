@@ -19,7 +19,6 @@ class DrugController extends Controller
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('generic_name', 'like', "%{$search}%")
                   ->orWhere('brand_name', 'like', "%{$search}%")
-                  ->orWhere('manufacturer', 'like', "%{$search}%")
                   ->orWhere('barcode', 'like', "%{$search}%");
             });
         }
@@ -62,6 +61,7 @@ class DrugController extends Controller
         if (empty($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
         }
+
         
         $drug = Drug::create($data);
         return response()->json($drug, Response::HTTP_CREATED);
@@ -75,6 +75,7 @@ class DrugController extends Controller
         if (isset($data['name']) && !isset($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
         }
+
         
         $drug->fill($data);
         $drug->save();
@@ -97,16 +98,18 @@ class DrugController extends Controller
             'brand_id' => ['sometimes', 'nullable', 'integer', 'exists:brands,id'],
             'category_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'image' => ['sometimes', 'nullable', 'string', 'max:500'],
-            'unit' => [$partial ? 'sometimes' : 'required', 'string', 'max:50'],
-            'price' => [$partial ? 'sometimes' : 'required', 'numeric', 'min:0'],
-            'cost_price' => [$partial ? 'sometimes' : 'required', 'numeric', 'min:0'],
-            'quantity' => [$partial ? 'sometimes' : 'required', 'integer', 'min:0'],
+            'box_price' => [$partial ? 'sometimes' : 'required', 'numeric', 'min:0'],
+            'box_cost_price' => [$partial ? 'sometimes' : 'required', 'numeric', 'min:0'],
+            'strip_price' => [$partial ? 'sometimes' : 'required', 'numeric', 'min:0'],
+            'strip_cost_price' => [$partial ? 'sometimes' : 'required', 'numeric', 'min:0'],
+            'tablet_price' => [$partial ? 'sometimes' : 'required', 'numeric', 'min:0'],
+            'tablet_cost_price' => [$partial ? 'sometimes' : 'required', 'numeric', 'min:0'],
+            'strips_per_box' => [$partial ? 'sometimes' : 'required', 'integer', 'min:1'],
+            'tablets_per_strip' => [$partial ? 'sometimes' : 'required', 'integer', 'min:1'],
+            'quantity_in_boxes' => [$partial ? 'sometimes' : 'required', 'integer', 'min:0'],
+            'quantity' => ['sometimes', 'integer', 'min:0'],
             'expiry_date' => [$partial ? 'sometimes' : 'required', 'date', 'after:today'],
             'barcode' => ['sometimes', 'nullable', 'string', 'max:50', 'unique:drugs,barcode' . ($partial ? ',' . $request->route('drug')?->id : '')],
-            'manufacturer' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'dosage' => ['sometimes', 'nullable', 'string', 'max:100'],
-            'instructions' => ['sometimes', 'nullable', 'string'],
-            'side_effects' => ['sometimes', 'nullable', 'string'],
             'status' => ['sometimes', 'string', 'in:active,inactive'],
         ];
 
