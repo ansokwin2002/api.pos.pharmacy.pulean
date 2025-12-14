@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Drug;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class DrugController extends Controller
@@ -44,7 +43,12 @@ class DrugController extends Controller
             $query->expiringSoon($days);
         }
 
+        if ($typeDrug = $request->query('type_drug')) {
+            $query->where('type_drug', $typeDrug);
+        }
+
         $perPage = (int) $request->query('per_page', 15);
+
         return response()->json($query->paginate($perPage));
     }
 
@@ -56,35 +60,34 @@ class DrugController extends Controller
     public function store(Request $request)
     {
         $data = $this->validateData($request);
-        
-        // Generate slug if not provided
+
         if (empty($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
         }
 
-        
         $drug = Drug::create($data);
+
         return response()->json($drug, Response::HTTP_CREATED);
     }
 
     public function update(Request $request, Drug $drug)
     {
-        $data = $this->validateData($request, partial: true);
-        
-        // Generate slug if name is updated but slug is not provided
+        $data = $this->validateData($request, true);
+
         if (isset($data['name']) && !isset($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
         }
 
-        
         $drug->fill($data);
         $drug->save();
+
         return response()->json($drug);
     }
 
     public function destroy(Drug $drug)
     {
         $drug->delete();
+
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }
 
@@ -94,14 +97,15 @@ class DrugController extends Controller
             'type' => 'required|string|in:box-strip-tablet,box-only',
         ]);
 
-        $type = $validated['type'];
         $response = [];
 
-        if ($type === 'box-strip-tablet') {
-            $response['tablet_cost_price'] = $drug->tablet_cost_price;
-            $response['strip_cost_price'] = $drug->strip_cost_price;
-        } elseif ($type === 'box-only') {
-            $response['tablet_cost_price'] = $drug->tablet_cost_price;
+        if ($validated['type'] === 'box-strip-tablet') {
+            $response['tablet_price'] = $drug->tablet_price;
+            $response['strip_price'] = $drug->strip_price;
+        }
+
+        if ($validated['type'] === 'box-only') {
+            $response['box_price'] = $drug->box_price;
         }
 
         return response()->json($response);
@@ -111,27 +115,46 @@ class DrugController extends Controller
     {
         $rules = [
             'name' => [$partial ? 'sometimes' : 'required', 'string', 'max:255'],
-            'type_drug' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'slug' => ['sometimes', 'string', 'max:255', 'unique:drugs,slug' . ($partial ? ',' . $request->route('drug')?->id : '')],
+            'slug' => [
+                'sometimes',
+                'string',
+                'max:255',
+                'unique:drugs,slug' . ($partial ? ',' . optional($request->route('drug'))->id : ''),
+            ],
             'generic_name' => [$partial ? 'sometimes' : 'required', 'string', 'max:255'],
             'brand_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'brand_id' => ['sometimes', 'nullable', 'integer', 'exists:brands,id'],
             'category_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'image' => ['sometimes', 'nullable', 'string', 'max:500'],
-            'box_price' => [$partial ? 'sometimes' : 'nullable', 'numeric', 'min:0'],
-            'box_cost_price' => [$partial ? 'sometimes' : 'nullable', 'numeric', 'min:0'],
-            'strip_price' => [$partial ? 'sometimes' : 'nullable', 'numeric', 'min:0'],
-            'strip_cost_price' => [$partial ? 'sometimes' : 'nullable', 'numeric', 'min:0'],
-            'tablet_price' => [$partial ? 'sometimes' : 'nullable', 'numeric', 'min:0'],
-            'tablet_cost_price' => [$partial ? 'sometimes' : 'nullable', 'numeric', 'min:0'],
+            'box_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'box_cost_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'strip_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'strip_cost_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'tablet_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'tablet_cost_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'strips_per_box' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'tablets_per_strip' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'quantity_in_boxes' => [$partial ? 'sometimes' : 'nullable', 'integer', 'min:0'],
+            'quantity_in_boxes' => ['sometimes', 'nullable', 'integer', 'min:0'],
             'expiry_date' => [$partial ? 'sometimes' : 'required', 'date', 'after:today'],
-            'barcode' => ['sometimes', 'nullable', 'string', 'max:50', 'unique:drugs,barcode' . ($partial ? ',' . $request->route('drug')?->id : '')],
+            'barcode' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:50',
+                'unique:drugs,barcode' . ($partial ? ',' . optional($request->route('drug'))->id : ''),
+            ],
             'status' => ['sometimes', 'string', 'in:active,inactive'],
-            'type_drug' => ['sometimes', 'string'],
+            'type_drug' => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
+
+        if (!$partial && $request->input('type_drug') === 'box-strip-tablet') {
+            $rules['strip_price'][] = 'required';
+            $rules['strip_cost_price'][] = 'required';
+            $rules['tablet_price'][] = 'required';
+            $rules['tablet_cost_price'][] = 'required';
+            $rules['strips_per_box'][] = 'required';
+            $rules['tablets_per_strip'][] = 'required';
+        }
 
         return $request->validate($rules);
     }
