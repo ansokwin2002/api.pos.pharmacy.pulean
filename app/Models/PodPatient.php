@@ -17,8 +17,5 @@ class PodPatient extends Model
         'age',
         'telephone',
         'address',
-        'signs_of_life',
-        'symptom',
-        'diagnosis',
     ];
 }

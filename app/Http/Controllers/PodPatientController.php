@@ -17,9 +17,7 @@ class PodPatientController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('gender', 'like', "%{$search}%")
-                  ->orWhere('telephone', 'like', "%{$search}%")
-                  ->orWhere('symptom', 'like', "%{$search}%")
-                  ->orWhere('diagnosis', 'like', "%{$search}%");
+                  ->orWhere('telephone', 'like', "%{$search}%");
             });
         }
 
@@ -61,9 +59,6 @@ class PodPatientController extends Controller
             'age' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:150'],
             'telephone' => ['sometimes', 'nullable', 'string', 'max:30'],
             'address' => ['sometimes', 'nullable', 'string'],
-            'signs_of_life' => ['sometimes', 'nullable', 'string'],
-            'symptom' => ['sometimes', 'nullable', 'string'],
-            'diagnosis' => ['sometimes', 'nullable', 'string'],
         ];
 
         return $request->validate($rules);
