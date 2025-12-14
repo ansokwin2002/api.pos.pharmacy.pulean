@@ -14,6 +14,7 @@ class Drug extends Model
     protected $fillable = [
         'name',
         'slug',
+        'type_drug',
         'generic_name',
         'brand_name',
         'brand_id',
@@ -38,7 +39,6 @@ class Drug extends Model
         // Auto-calculated values
         'total_strips',
         'total_tablets',
-        'quantity',  // (quantity is total tablets)
 
         // Extra
         'expiry_date',
@@ -63,7 +63,6 @@ class Drug extends Model
         'quantity_in_boxes'=> 'integer',
         'total_strips'     => 'integer',
         'total_tablets'    => 'integer',
-        'quantity'         => 'integer',
 
         'expiry_date'      => 'date',
         'category_id'      => 'integer',
@@ -91,9 +90,6 @@ class Drug extends Model
 
                 // Calculate tablets
                 $drug->total_tablets = $drug->total_strips * $drug->tablets_per_strip;
-
-                // Set total quantity (tablets)
-                $drug->quantity = $drug->total_tablets;
             }
         });
     }
@@ -108,11 +104,6 @@ class Drug extends Model
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
-    }
-
-    public function scopeInStock($query)
-    {
-        return $query->where('quantity', '>', 0);
     }
 
     public function scopeExpiringSoon($query, $days = 30)

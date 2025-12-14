@@ -92,6 +92,7 @@ class DrugController extends Controller
     {
         $rules = [
             'name' => [$partial ? 'sometimes' : 'required', 'string', 'max:255'],
+            'type_drug' => ['sometimes', 'nullable', 'string', 'max:255'],
             'slug' => ['sometimes', 'string', 'max:255', 'unique:drugs,slug' . ($partial ? ',' . $request->route('drug')?->id : '')],
             'generic_name' => [$partial ? 'sometimes' : 'required', 'string', 'max:255'],
             'brand_name' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -104,10 +105,9 @@ class DrugController extends Controller
             'strip_cost_price' => [$partial ? 'sometimes' : 'required', 'numeric', 'min:0'],
             'tablet_price' => [$partial ? 'sometimes' : 'required', 'numeric', 'min:0'],
             'tablet_cost_price' => [$partial ? 'sometimes' : 'required', 'numeric', 'min:0'],
-            'strips_per_box' => [$partial ? 'sometimes' : 'required', 'integer', 'min:1'],
-            'tablets_per_strip' => [$partial ? 'sometimes' : 'required', 'integer', 'min:1'],
-            'quantity_in_boxes' => [$partial ? 'sometimes' : 'required', 'integer', 'min:0'],
-            'quantity' => ['sometimes', 'integer', 'min:0'],
+            'strips_per_box' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'tablets_per_strip' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'quantity_in_boxes' => [$partial ? 'sometimes' : 'nullable', 'integer', 'min:0'],
             'expiry_date' => [$partial ? 'sometimes' : 'required', 'date', 'after:today'],
             'barcode' => ['sometimes', 'nullable', 'string', 'max:50', 'unique:drugs,barcode' . ($partial ? ',' . $request->route('drug')?->id : '')],
             'status' => ['sometimes', 'string', 'in:active,inactive'],

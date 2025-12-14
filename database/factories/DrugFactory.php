@@ -25,6 +25,7 @@ class DrugFactory extends Factory
         
         return [
             'name' => $name,
+            'type_drug' => $this->faker->randomElement(['Tablet', 'Syrup', 'Injection']),
             'slug' => Str::slug($name),
             'generic_name' => $this->faker->words(2, true),
             'brand_name' => $this->faker->company(),
@@ -40,7 +41,6 @@ class DrugFactory extends Factory
             'strips_per_box' => $this->faker->numberBetween(5, 20),
             'tablets_per_strip' => $this->faker->numberBetween(5, 20),
             'quantity_in_boxes' => $this->faker->numberBetween(1, 50),
-            'quantity' => $this->faker->numberBetween(0, 2000),
             'expiry_date' => $this->faker->dateTimeBetween('now', '+3 years')->format('Y-m-d'),
             'barcode' => $this->faker->unique()->numerify('#############'),
             'status' => $this->faker->randomElement(['active', 'inactive']),
@@ -64,26 +64,6 @@ class DrugFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'status' => 'inactive',
-        ]);
-    }
-
-    /**
-     * Indicate that the drug is in stock.
-     */
-    public function inStock(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'quantity' => $this->faker->numberBetween(1, 2000),
-        ]);
-    }
-
-    /**
-     * Indicate that the drug is out of stock.
-     */
-    public function outOfStock(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'quantity' => 0,
         ]);
     }
 
