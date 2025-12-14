@@ -88,6 +88,25 @@ class DrugController extends Controller
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }
 
+    public function getDetailsByTypeDrug(Request $request, Drug $drug)
+    {
+        $validated = $request->validate([
+            'type' => 'required|string|in:box-strip-tablet,box-only',
+        ]);
+
+        $type = $validated['type'];
+        $response = [];
+
+        if ($type === 'box-strip-tablet') {
+            $response['tablet_cost_price'] = $drug->tablet_cost_price;
+            $response['strip_cost_price'] = $drug->strip_cost_price;
+        } elseif ($type === 'box-only') {
+            $response['tablet_cost_price'] = $drug->tablet_cost_price;
+        }
+
+        return response()->json($response);
+    }
+
     private function validateData(Request $request, bool $partial = false): array
     {
         $rules = [

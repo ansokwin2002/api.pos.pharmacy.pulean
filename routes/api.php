@@ -49,6 +49,7 @@ Route::prefix('drugs')->group(function () {
     Route::get('/', [DrugController::class, 'index']);
     Route::post('/', [DrugController::class, 'store']);
     Route::get('/{drug}', [DrugController::class, 'show']);
+    Route::get('/{drug}/detail/type_drug', [DrugController::class, 'getDetailsByTypeDrug']);
     Route::put('/{drug}', [DrugController::class, 'update']);
     Route::patch('/{drug}', [DrugController::class, 'update']);
     Route::delete('/{drug}', [DrugController::class, 'destroy']);
