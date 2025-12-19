@@ -56,7 +56,7 @@ class PodPatientController extends Controller
         $rules = [
             'name' => [$partial ? 'sometimes' : 'required', 'string', 'max:255'],
             'gender' => ['sometimes', 'nullable', 'string', 'max:50'],
-            'age' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:150'],
+            'age' => ['sometimes', 'nullable', 'string', 'min:0', 'max:150'],
             'telephone' => ['sometimes', 'nullable', 'string', 'max:30'],
             'address' => ['sometimes', 'nullable', 'string'],
         ];
