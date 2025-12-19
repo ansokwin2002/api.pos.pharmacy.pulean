@@ -18,6 +18,7 @@ class Drug extends Model
         'generic_name',
         'brand_name',
         'brand_id',
+        'company_id', // Added company_id
         'category_id',
         'image',
 
@@ -98,6 +99,11 @@ class Drug extends Model
     public function brand()
     {
         return $this->belongsTo(Brand::class);
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 
     // Scopes

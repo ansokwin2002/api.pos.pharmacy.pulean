@@ -47,6 +47,10 @@ class DrugController extends Controller
             $query->where('type_drug', $typeDrug);
         }
 
+        if ($companyId = $request->query('company_id')) { // Add company_id filter
+            $query->where('company_id', $companyId);
+        }
+
         $perPage = (int) $request->query('per_page', 15);
 
         return response()->json($query->paginate($perPage));
@@ -124,6 +128,7 @@ class DrugController extends Controller
             'generic_name' => [$partial ? 'sometimes' : 'required', 'string', 'max:255'],
             'brand_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'brand_id' => ['sometimes', 'nullable', 'integer', 'exists:brands,id'],
+            'company_id' => ['sometimes', 'nullable', 'integer', 'exists:companies,id'], // Added company_id validation
             'category_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'image' => ['sometimes', 'nullable', 'string', 'max:500'],
             'box_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],

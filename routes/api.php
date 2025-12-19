@@ -8,7 +8,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\PatientHistoryController;
 use App\Http\Controllers\TempPrescriptionController;
-
+use App\Http\Controllers\CompanyController;
 
 /*
 |--------------------------------------------------------------------------
@@ -81,4 +81,13 @@ Route::prefix('temp-prescriptions')->group(function () {
     Route::put('/{tempPrescription}', [TempPrescriptionController::class, 'update']);
     Route::patch('/{tempPrescription}', [TempPrescriptionController::class, 'update']);
     Route::delete('/{tempPrescription}', [TempPrescriptionController::class, 'destroy']);
+});
+
+Route::prefix('companies')->group(function () {
+    Route::get('/', [CompanyController::class, 'index']);
+    Route::post('/', [CompanyController::class, 'store']);
+    Route::get('/{company}', [CompanyController::class, 'show']);
+    Route::put('/{company}', [CompanyController::class, 'update']);
+    Route::patch('/{company}', [CompanyController::class, 'update']);
+    Route::delete('/{company}', [CompanyController::class, 'destroy']);
 });
