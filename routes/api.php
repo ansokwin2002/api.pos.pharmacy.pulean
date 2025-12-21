@@ -74,12 +74,16 @@ Route::prefix('patient-histories')->group(function () {
     Route::delete('/{patientHistory}', [PatientHistoryController::class, 'destroy']);
 });
 
+
 Route::prefix('temp-prescriptions')->group(function () {
     Route::get('/', [TempPrescriptionController::class, 'index']);
     Route::post('/', [TempPrescriptionController::class, 'store']);
+    Route::post('/patient/{patientId}', [TempPrescriptionController::class, 'storeByPatientId']);
     Route::get('/{tempPrescription}', [TempPrescriptionController::class, 'show']);
+    Route::get('/patient/{patientId}', [TempPrescriptionController::class, 'getByPatientId']);
     Route::put('/{tempPrescription}', [TempPrescriptionController::class, 'update']);
     Route::patch('/{tempPrescription}', [TempPrescriptionController::class, 'update']);
+    Route::delete('/patient/{patientId}', [TempPrescriptionController::class, 'destroyByPatientId']); // New route
     Route::delete('/{tempPrescription}', [TempPrescriptionController::class, 'destroy']);
 });
 
