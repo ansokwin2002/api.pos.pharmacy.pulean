@@ -6,6 +6,8 @@ use App\Models\Drug;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class DrugController extends Controller
 {
@@ -106,6 +108,7 @@ class DrugController extends Controller
         if ($validated['type'] === 'box-strip-tablet') {
             $response['tablet_price'] = $drug->tablet_price;
             $response['strip_price'] = $drug->strip_price;
+            $response['box_price'] = $drug->box_price;
         }
 
         if ($validated['type'] === 'box-only') {
@@ -113,6 +116,96 @@ class DrugController extends Controller
         }
 
         return response()->json($response);
+    }
+
+    public function deductStock(Request $request)
+    {
+        // 1. Validation
+        $validator = Validator::make($request->all(), [
+            'deductions' => ['required', 'array', 'min:1'],
+            'deductions.*.drug_id' => ['required', 'integer', 'exists:drugs,id'],
+            'deductions.*.deducted_quantity' => ['required', 'integer', 'min:1'],
+            'deductions.*.deduction_unit' => ['required', 'string', 'in:box,strip,tablet'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $results = [];
+        $errors = [];
+
+        DB::beginTransaction();
+        try {
+            foreach ($request->deductions as $deductionItem) {
+                $drug = Drug::find($deductionItem['drug_id']);
+
+                // These defaults help avoid division by zero and ensure calculations work
+                $stripsPerBox = $drug->strips_per_box ?? 1;
+                $tabletsPerStrip = $drug->tablets_per_strip ?? 1;
+
+                if ($stripsPerBox === 0) $stripsPerBox = 1;
+                if ($tabletsPerStrip === 0) $tabletsPerStrip = 1;
+
+                $tabletsToDeduct = 0;
+
+                if ($deductionItem['deduction_unit'] === 'tablet') {
+                    $tabletsToDeduct = $deductionItem['deducted_quantity'];
+                } elseif ($deductionItem['deduction_unit'] === 'strip') {
+                    $tabletsToDeduct = $deductionItem['deducted_quantity'] * $tabletsPerStrip;
+                } elseif ($deductionItem['deduction_unit'] === 'box') {
+                    $tabletsToDeduct = $deductionItem['deducted_quantity'] * $stripsPerBox * $tabletsPerStrip;
+                }
+
+                // Check for sufficient stock
+                if ($drug->total_tablets < $tabletsToDeduct) {
+                    $errors[] = [
+                        'drug_id' => $drug->id,
+                        'message' => 'Insufficient stock for drug: ' . $drug->name,
+                        'available_tablets' => $drug->total_tablets,
+                        'requested_deduction_in_tablets' => $tabletsToDeduct,
+                    ];
+                    continue; // Skip to next deduction item
+                }
+
+                // Perform deduction
+                $drug->total_tablets -= $tabletsToDeduct;
+
+                // The boot method in Drug.php will now handle recalculating
+                // quantity_in_boxes and total_strips based on the new total_tablets.
+                $drug->save();
+
+                $results[] = [
+                    'drug_id' => $drug->id,
+                    'message' => 'Stock deducted successfully',
+                    'new_total_tablets' => $drug->total_tablets,
+                ];
+            }
+
+            if (!empty($errors)) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Some deductions failed due to insufficient stock',
+                    'failed_deductions' => $errors,
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            DB::commit();
+            return response()->json([
+                'message' => 'All stock deductions processed successfully',
+                'results' => $results,
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'An unexpected error occurred during stock deduction',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     private function validateData(Request $request, bool $partial = false): array

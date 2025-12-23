@@ -53,6 +53,7 @@ Route::prefix('drugs')->group(function () {
     Route::put('/{drug}', [DrugController::class, 'update']);
     Route::patch('/{drug}', [DrugController::class, 'update']);
     Route::delete('/{drug}', [DrugController::class, 'destroy']);
+    Route::patch('/deduct-stock', [DrugController::class, 'deductStock']);
 });
 
 Route::prefix('brands')->group(function () {

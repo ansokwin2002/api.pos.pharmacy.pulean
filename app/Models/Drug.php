@@ -82,15 +82,26 @@ class Drug extends Model
         parent::boot();
 
         static::saving(function ($drug) {
+            $stripsPerBox = $drug->strips_per_box ?? 1;
+            $tabletsPerStrip = $drug->tablets_per_strip ?? 1;
 
-            // Ensure required packaging fields exist
-            if ($drug->strips_per_box > 0 && $drug->tablets_per_strip > 0 && $drug->quantity_in_boxes > 0) {
+            if ($stripsPerBox === 0) $stripsPerBox = 1;
+            if ($tabletsPerStrip === 0) $tabletsPerStrip = 1;
 
-                // Calculate strips
-                $drug->total_strips = $drug->quantity_in_boxes * $drug->strips_per_box;
-
-                // Calculate tablets
-                $drug->total_tablets = $drug->total_strips * $drug->tablets_per_strip;
+            if ($drug->isDirty('total_tablets')) {
+                // If total_tablets was directly modified, recalculate derived fields from it.
+                $drug->quantity_in_boxes = floor($drug->total_tablets / ($stripsPerBox * $tabletsPerStrip));
+                $drug->total_strips = floor($drug->total_tablets / $tabletsPerStrip);
+            } elseif ($drug->isDirty('quantity_in_boxes') || $drug->isDirty('strips_per_box') || $drug->isDirty('tablets_per_strip') || $drug->exists === false) {
+                // Original logic: recalculate from quantity_in_boxes if it's the input source
+                if ($drug->quantity_in_boxes >= 0) {
+                    $drug->total_strips = $drug->quantity_in_boxes * $stripsPerBox;
+                    $drug->total_tablets = $drug->total_strips * $tabletsPerStrip;
+                } else {
+                    // If any of the inputs are invalid, set derived to zero
+                    $drug->total_strips = 0;
+                    $drug->total_tablets = 0;
+                }
             }
         });
     }

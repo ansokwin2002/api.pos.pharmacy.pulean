@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             BrandSeeder::class,
-            DrugSeeder::class,
+            // DrugSeeder::class,
         ]);
     }
 }
