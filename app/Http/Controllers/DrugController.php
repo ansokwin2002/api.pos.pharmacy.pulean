@@ -53,9 +53,7 @@ class DrugController extends Controller
             $query->where('company_id', $companyId);
         }
 
-        $perPage = (int) $request->query('per_page', 15);
-
-        return response()->json($query->paginate($perPage));
+        return response()->json($query->get());
     }
 
     public function show(Drug $drug)
@@ -138,10 +136,22 @@ class DrugController extends Controller
         $results = [];
         $errors = [];
 
+        $results = [];
+        $errors = [];
+
         DB::beginTransaction();
         try {
             foreach ($request->deductions as $deductionItem) {
                 $drug = Drug::find($deductionItem['drug_id']);
+
+                if ($drug->type_drug === 'box-only' && $deductionItem['deduction_unit'] !== 'box') {
+                    $errors[] = [
+                        'drug_id' => $drug->id,
+                        'message' => 'Invalid deduction unit for drug ' . $drug->name . '. Only "box" unit is allowed.',
+                        'deduction_unit' => $deductionItem['deduction_unit'],
+                    ];
+                    continue;
+                }
 
                 // These defaults help avoid division by zero and ensure calculations work
                 $stripsPerBox = $drug->strips_per_box ?? 1;
@@ -173,10 +183,8 @@ class DrugController extends Controller
 
                 // Perform deduction
                 $drug->total_tablets -= $tabletsToDeduct;
-
-                // The boot method in Drug.php will now handle recalculating
-                // quantity_in_boxes and total_strips based on the new total_tablets.
                 $drug->save();
+
 
                 $results[] = [
                     'drug_id' => $drug->id,
