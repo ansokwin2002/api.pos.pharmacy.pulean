@@ -19,7 +19,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://192.168.77.168:3000'],
+    'allowed_origins' => [
+        'https://punleukrek.online',
+        'https://www.punleukrek.online',
+    ],
 
     'allowed_origins_patterns' => [],
 
