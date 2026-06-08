@@ -24,6 +24,7 @@ use App\Http\Controllers\CompanyController;
 // Auth routes
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
+    Route::get('/users', [AuthController::class, 'getUserList']);
     Route::post('/login', [AuthController::class, 'login']);
 
     Route::middleware('auth:sanctum')->group(function () {

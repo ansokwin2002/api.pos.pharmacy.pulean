@@ -33,6 +33,15 @@ class AuthController extends Controller
         ], 201);
     }
 
+    public function getUserList()
+    {
+        $users = User::all();
+
+        return response()->json([
+            'users' => $users,
+        ]);
+    }
+
     public function login(Request $request)
     {
         $validated = $request->validate([
