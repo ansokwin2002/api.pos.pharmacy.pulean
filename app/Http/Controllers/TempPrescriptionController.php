@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\HashidsHelper;
 use App\Models\TempPrescription;
 use Illuminate\Http\Request;
 
@@ -15,7 +16,8 @@ class TempPrescriptionController extends Controller
         $query = TempPrescription::query();
 
         if ($patientId = $request->query('patient_id')) {
-            $query->where('json_data->patient_id', (string) $patientId);
+            $decodedId = HashidsHelper::decode($patientId) ?? $patientId;
+            $query->where('json_data->patient_id', (string) $decodedId);
         }
 
         return response()->json($query->get());
@@ -24,9 +26,11 @@ class TempPrescriptionController extends Controller
 
     public function getByPatientId(string $patientId)
     {
+        $decodedId = HashidsHelper::decode($patientId) ?? $patientId;
+
         $tempPrescriptions = TempPrescription::where(
             'json_data->patient_id',
-            (string) $patientId
+            (string) $decodedId
         )->get();
 
         if ($tempPrescriptions->isEmpty()) {
@@ -49,9 +53,11 @@ class TempPrescriptionController extends Controller
             'drugs' => 'required|array',
         ]);
 
+        $decodedId = HashidsHelper::decode($patientId) ?? $patientId;
+
         $tempPrescription = TempPrescription::create([
             'json_data' => [
-                'patient_id' => (string) $patientId,
+                'patient_id' => (string) $decodedId,
                 'drugs' => $request->drugs,
             ],
         ]);
@@ -138,9 +144,11 @@ class TempPrescriptionController extends Controller
 
     public function destroyByPatientId(string $patientId)
     {
+        $decodedId = HashidsHelper::decode($patientId) ?? $patientId;
+
         $deletedCount = TempPrescription::where(
             'json_data->patient_id',
-            (string) $patientId
+            (string) $decodedId
         )->delete();
 
         if ($deletedCount === 0) {

@@ -22,7 +22,8 @@ return [
     'allowed_origins' => [
         'https://punleukrek.online',
         'https://www.punleukrek.online',
-        'http://192.168.77.61:3000'
+        'http://192.168.77.61:3000',
+        'http://192.168.1.7:3000'
     ],
 
     'allowed_origins_patterns' => [],

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\HashidsHelper;
 use App\Models\PatientHistory;
 use Illuminate\Http\Request;
 
@@ -59,8 +60,9 @@ class PatientHistoryController extends Controller
      */
     public function getByPatientId(string $patientId)
     {
-        // Query patient histories where json_data->patient->id matches the patient ID
-        $histories = PatientHistory::whereRaw("JSON_EXTRACT(json_data, '$.patient.id') = ?", [$patientId])
+        $decodedId = HashidsHelper::decode($patientId) ?? $patientId;
+
+        $histories = PatientHistory::whereRaw("JSON_EXTRACT(json_data, '$.patient.id') = ?", [$decodedId])
             ->orderBy('created_at', 'desc')
             ->get();
 
