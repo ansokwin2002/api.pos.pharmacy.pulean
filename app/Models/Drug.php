@@ -61,7 +61,7 @@ class Drug extends Model
         'tablets_per_strip'=> 'integer',
 
         // Stock
-        'quantity_in_boxes'=> 'integer',
+        'quantity_in_boxes'=> 'decimal:4',
         'total_strips'     => 'integer',
         'total_tablets'    => 'integer',
 
@@ -89,9 +89,10 @@ class Drug extends Model
             if ($tabletsPerStrip === 0) $tabletsPerStrip = 1;
 
             if ($drug->isDirty('total_tablets')) {
-                // If total_tablets was directly modified, recalculate derived fields from it.
-                $drug->quantity_in_boxes = floor($drug->total_tablets / ($stripsPerBox * $tabletsPerStrip));
+                // If total_tablets was directly modified (e.g. from stock deduction),
+                // recalculate derived fields. Use round(2) for boxes so partial boxes are preserved.
                 $drug->total_strips = floor($drug->total_tablets / $tabletsPerStrip);
+                $drug->quantity_in_boxes = round($drug->total_tablets / ($stripsPerBox * $tabletsPerStrip), 4);
             } elseif ($drug->isDirty('quantity_in_boxes') || $drug->isDirty('strips_per_box') || $drug->isDirty('tablets_per_strip') || $drug->exists === false) {
                 // Original logic: recalculate from quantity_in_boxes if it's the input source
                 if ($drug->quantity_in_boxes >= 0) {

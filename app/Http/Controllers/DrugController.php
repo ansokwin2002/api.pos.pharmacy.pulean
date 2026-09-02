@@ -118,8 +118,13 @@ class DrugController extends Controller
 
     public function deductStock(Request $request)
     {
+        $input = $request->all();
+        if (empty($input['deductions']) && $request->isJson()) {
+            $input = $request->json()->all();
+        }
+
         // 1. Validation
-        $validator = Validator::make($request->all(), [
+        $validator = Validator::make($input, [
             'deductions' => ['required', 'array', 'min:1'],
             'deductions.*.drug_id' => ['required', 'integer', 'exists:drugs,id'],
             'deductions.*.deducted_quantity' => ['required', 'integer', 'min:1'],
@@ -141,7 +146,8 @@ class DrugController extends Controller
 
         DB::beginTransaction();
         try {
-            foreach ($request->deductions as $deductionItem) {
+            $deductionsList = $input['deductions'] ?? [];
+            foreach ($deductionsList as $deductionItem) {
                 $drug = Drug::find($deductionItem['drug_id']);
 
                 if ($drug->type_drug === 'box-only' && $deductionItem['deduction_unit'] !== 'box') {
