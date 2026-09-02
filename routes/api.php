@@ -49,12 +49,12 @@ Route::prefix('pod-patients')->group(function () {
 Route::prefix('drugs')->group(function () {
     Route::get('/', [DrugController::class, 'index']);
     Route::post('/', [DrugController::class, 'store']);
+    Route::match(['post', 'patch'], '/deduct-stock', [DrugController::class, 'deductStock']);
     Route::get('/{drug}', [DrugController::class, 'show']);
     Route::get('/{drug}/detail/type_drug', [DrugController::class, 'getDetailsByTypeDrug']);
     Route::put('/{drug}', [DrugController::class, 'update']);
     Route::patch('/{drug}', [DrugController::class, 'update']);
     Route::delete('/{drug}', [DrugController::class, 'destroy']);
-    Route::patch('/deduct-stock', [DrugController::class, 'deductStock']);
 });
 
 Route::prefix('brands')->group(function () {
@@ -80,12 +80,12 @@ Route::prefix('patient-histories')->group(function () {
 Route::prefix('temp-prescriptions')->group(function () {
     Route::get('/', [TempPrescriptionController::class, 'index']);
     Route::post('/', [TempPrescriptionController::class, 'store']);
-    Route::post('/patient/{patientId}', [TempPrescriptionController::class, 'storeByPatientId']);
-    Route::get('/{tempPrescription}', [TempPrescriptionController::class, 'show']);
     Route::get('/patient/{patientId}', [TempPrescriptionController::class, 'getByPatientId']);
+    Route::post('/patient/{patientId}', [TempPrescriptionController::class, 'storeByPatientId']);
+    Route::delete('/patient/{patientId}', [TempPrescriptionController::class, 'destroyByPatientId']);
+    Route::get('/{tempPrescription}', [TempPrescriptionController::class, 'show']);
     Route::put('/{tempPrescription}', [TempPrescriptionController::class, 'update']);
     Route::patch('/{tempPrescription}', [TempPrescriptionController::class, 'update']);
-    Route::delete('/patient/{patientId}', [TempPrescriptionController::class, 'destroyByPatientId']); // New route
     Route::delete('/{tempPrescription}', [TempPrescriptionController::class, 'destroy']);
 });
 

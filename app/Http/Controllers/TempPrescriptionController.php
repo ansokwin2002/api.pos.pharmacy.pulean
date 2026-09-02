@@ -17,7 +17,10 @@ class TempPrescriptionController extends Controller
 
         if ($patientId = $request->query('patient_id')) {
             $decodedId = HashidsHelper::decode($patientId) ?? $patientId;
-            $query->where('json_data->patient_id', (string) $decodedId);
+            $query->where(function ($q) use ($patientId, $decodedId) {
+                $q->where('json_data->patient_id', (string) $patientId)
+                  ->orWhere('json_data->patient_id', (string) $decodedId);
+            });
         }
 
         return response()->json($query->get());
@@ -28,17 +31,12 @@ class TempPrescriptionController extends Controller
     {
         $decodedId = HashidsHelper::decode($patientId) ?? $patientId;
 
-        $tempPrescriptions = TempPrescription::where(
-            'json_data->patient_id',
-            (string) $decodedId
-        )->get();
+        $tempPrescriptions = TempPrescription::where(function ($q) use ($patientId, $decodedId) {
+            $q->where('json_data->patient_id', (string) $patientId)
+              ->orWhere('json_data->patient_id', (string) $decodedId);
+        })->get();
 
-        if ($tempPrescriptions->isEmpty()) {
-            return response()->json([
-                'message' => 'No temporary prescriptions found for the given patient ID'
-            ], 404);
-        }
-
+        // Always return 200 with empty array if none found (avoids triggering global 404 error handler)
         return response()->json($tempPrescriptions, 200);
     }
 
@@ -57,12 +55,28 @@ class TempPrescriptionController extends Controller
 
         $tempPrescription = TempPrescription::create([
             'json_data' => [
-                'patient_id' => (string) $decodedId,
+                'patient_id' => (string) $patientId,
                 'drugs' => $request->drugs,
             ],
         ]);
 
         return response()->json($tempPrescription, 201);
+    }
+    
+    // ...
+    public function destroyByPatientId(string $patientId)
+    {
+        $decodedId = HashidsHelper::decode($patientId) ?? $patientId;
+
+        $deletedCount = TempPrescription::where(function ($q) use ($patientId, $decodedId) {
+            $q->where('json_data->patient_id', (string) $patientId)
+              ->orWhere('json_data->patient_id', (string) $decodedId);
+        })->delete();
+
+        // Always return 200 regardless of whether records existed
+        return response()->json([
+            'message' => "{$deletedCount} temporary prescription(s) deleted successfully"
+        ], 200);
     }
 
 
@@ -72,7 +86,7 @@ class TempPrescriptionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'json_data' => 'required|json',
+            'json_data' => 'required|array',
         ]);
 
         $tempPrescription = TempPrescription::create([
@@ -112,7 +126,7 @@ class TempPrescriptionController extends Controller
         }
 
         $request->validate([
-            'json_data' => 'required|json',
+            'json_data' => 'required|array',
         ]);
 
         $tempPrescription->update([
@@ -141,25 +155,4 @@ class TempPrescriptionController extends Controller
             'message' => 'Temporary prescription deleted successfully'
         ], 200);
     }
-
-    public function destroyByPatientId(string $patientId)
-    {
-        $decodedId = HashidsHelper::decode($patientId) ?? $patientId;
-
-        $deletedCount = TempPrescription::where(
-            'json_data->patient_id',
-            (string) $decodedId
-        )->delete();
-
-        if ($deletedCount === 0) {
-            return response()->json([
-                'message' => 'No temporary prescriptions found for the given patient ID'
-            ], 404);
-        }
-
-        return response()->json([
-            'message' => "{$deletedCount} temporary prescription(s) deleted successfully"
-        ], 200);
-    }
-
 }
