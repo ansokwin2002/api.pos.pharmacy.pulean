@@ -11,9 +11,16 @@ class PatientHistoryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return PatientHistory::all();
+        $query = PatientHistory::query();
+
+        if ($type = $request->query('type')) {
+            $query->where('type', 'like', "%{$type}%");
+        }
+
+        $perPage = (int) $request->query('per_page', 15);
+        return response()->json($query->paginate($perPage));
     }
 
     /**

@@ -23,7 +23,8 @@ class TempPrescriptionController extends Controller
             });
         }
 
-        return response()->json($query->get());
+        $perPage = (int) $request->query('per_page', 15);
+        return response()->json($query->paginate($perPage));
     }
 
 
