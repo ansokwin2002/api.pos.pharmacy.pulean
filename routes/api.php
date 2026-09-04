@@ -9,6 +9,8 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\PatientHistoryController;
 use App\Http\Controllers\TempPrescriptionController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\SaleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -96,4 +98,14 @@ Route::prefix('companies')->group(function () {
     Route::put('/{company}', [CompanyController::class, 'update']);
     Route::patch('/{company}', [CompanyController::class, 'update']);
     Route::delete('/{company}', [CompanyController::class, 'destroy']);
+});
+
+Route::prefix('invoices')->group(function () {
+    Route::get('/next-number', [InvoiceController::class, 'nextNumber']);
+});
+
+Route::prefix('sales')->group(function () {
+    Route::get('/', [SaleController::class, 'index']);
+    Route::post('/', [SaleController::class, 'store']);
+    Route::get('/report', [SaleController::class, 'report']);
 });
