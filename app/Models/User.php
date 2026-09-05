@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -41,4 +42,31 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'role_user');
+    }
+
+    public function permissionNames(): array
+    {
+        return $this->roles()
+            ->with('permissions')
+            ->get()
+            ->flatMap(fn ($role) => $role->permissions)
+            ->pluck('name')
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function roleNames(): array
+    {
+        return $this->roles()->pluck('name')->all();
+    }
+
+    public function isAdmin(): bool
+    {
+        return in_array('admin', $this->roleNames(), true);
+    }
 }

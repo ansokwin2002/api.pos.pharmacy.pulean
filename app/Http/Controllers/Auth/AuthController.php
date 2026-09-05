@@ -29,6 +29,8 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'User registered successfully.',
             'user' => $user,
+            'roles' => $user->roleNames(),
+            'permissions' => $user->permissionNames(),
             'token' => $token,
         ], 201);
     }
@@ -65,6 +67,8 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Login successful.',
             'user' => $user,
+            'roles' => $user->roleNames(),
+            'permissions' => $user->permissionNames(),
             'token' => $token,
         ], 200);
     }
@@ -81,6 +85,10 @@ class AuthController extends Controller
 
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json([
+            'user' => $request->user(),
+            'roles' => $request->user()->roleNames(),
+            'permissions' => $request->user()->permissionNames(),
+        ]);
     }
 }

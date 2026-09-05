@@ -60,6 +60,59 @@ class SaleController extends Controller
         return response()->json($order->load('items'), Response::HTTP_CREATED);
     }
 
+    public function show(SaleOrder $sale)
+    {
+        return response()->json($sale->load('items'));
+    }
+
+    public function update(Request $request, SaleOrder $sale)
+    {
+        $data = $request->validate([
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'customer_phone' => ['nullable', 'string', 'max:50'],
+            'payment_method' => ['required', 'string', 'in:' . implode(',', self::PAYMENT_METHODS)],
+            'subtotal' => ['required', 'numeric', 'min:0'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
+            'tax' => ['nullable', 'numeric', 'min:0'],
+            'total' => ['required', 'numeric', 'min:0'],
+            'status' => ['nullable', 'string', 'in:completed,pending,cancelled,refunded'],
+            'items' => ['sometimes', 'array'],
+            'items.*.drug_name' => ['required_with:items', 'string', 'max:255'],
+            'items.*.drug_id' => ['nullable', 'integer', 'exists:drugs,id'],
+            'items.*.unit_type' => ['nullable', 'string', 'max:50'],
+            'items.*.price' => ['required_with:items', 'numeric', 'min:0'],
+            'items.*.qty' => ['required_with:items', 'integer', 'min:1'],
+        ]);
+
+        $sale->update([
+            'customer_name' => $data['customer_name'] ?? $sale->customer_name,
+            'customer_phone' => $data['customer_phone'] ?? $sale->customer_phone,
+            'payment_method' => $data['payment_method'],
+            'subtotal' => $data['subtotal'],
+            'discount' => $data['discount'] ?? 0,
+            'tax' => $data['tax'] ?? 0,
+            'total' => $data['total'],
+            'status' => $data['status'] ?? $sale->status,
+        ]);
+
+        if (isset($data['items'])) {
+            $sale->items()->delete();
+            foreach ($data['items'] as $item) {
+                SaleOrderItem::create([
+                    'sales_order_id' => $sale->id,
+                    'drug_id' => $item['drug_id'] ?? null,
+                    'drug_name' => $item['drug_name'],
+                    'unit_type' => $item['unit_type'] ?? null,
+                    'price' => $item['price'],
+                    'qty' => $item['qty'],
+                    'subtotal' => $item['price'] * $item['qty'],
+                ]);
+            }
+        }
+
+        return response()->json($sale->load('items'));
+    }
+
     public function index(Request $request)
     {
         $query = SaleOrder::with('items')->orderByDesc('created_at');
@@ -78,6 +131,10 @@ class SaleController extends Controller
 
         if ($paymentMethod = $request->query('payment_method')) {
             $query->where('payment_method', $paymentMethod);
+        }
+
+        if ($status = $request->query('status')) {
+            $query->where('status', $status);
         }
 
         $paginated = $query->paginate($request->query('per_page', 15));

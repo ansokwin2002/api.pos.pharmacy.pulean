@@ -11,6 +11,9 @@ use App\Http\Controllers\TempPrescriptionController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,8 +38,31 @@ Route::prefix('auth')->group(function () {
     });
 });
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+});
+
+Route::middleware('auth:sanctum')->get('/permissions', [PermissionController::class, 'index']);
+
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    // Roles
+    Route::get('/roles/all', [RoleController::class, 'all']);
+    Route::get('/roles', [RoleController::class, 'index']);
+    Route::post('/roles', [RoleController::class, 'store']);
+    Route::get('/roles/{role}', [RoleController::class, 'show']);
+    Route::put('/roles/{role}', [RoleController::class, 'update']);
+    Route::delete('/roles/{role}', [RoleController::class, 'destroy']);
+    Route::post('/roles/{role}/permissions', [RoleController::class, 'syncPermissions']);
+
+    // Users
+    Route::get('/users', [UserController::class, 'index']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::get('/users/{user}', [UserController::class, 'show']);
+    Route::put('/users/{user}', [UserController::class, 'update']);
+    Route::delete('/users/{user}', [UserController::class, 'destroy']);
+    Route::post('/users/{user}/password', [UserController::class, 'resetPassword']);
 });
 
 Route::prefix('pod-patients')->group(function () {
@@ -109,4 +135,7 @@ Route::prefix('sales')->group(function () {
     Route::get('/', [SaleController::class, 'index']);
     Route::post('/', [SaleController::class, 'store']);
     Route::get('/report', [SaleController::class, 'report']);
+    Route::get('/{sale}', [SaleController::class, 'show']);
+    Route::put('/{sale}', [SaleController::class, 'update']);
+    Route::patch('/{sale}', [SaleController::class, 'update']);
 });

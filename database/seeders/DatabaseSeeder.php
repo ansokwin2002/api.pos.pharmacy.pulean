@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             BrandSeeder::class,
+            RolesAndPermissionsSeeder::class,
             // DrugSeeder::class,
         ]);
     }

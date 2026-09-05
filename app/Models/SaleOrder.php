@@ -21,6 +21,7 @@ class SaleOrder extends Model
         'discount',
         'tax',
         'total',
+        'status',
     ];
 
     protected $casts = [
