@@ -246,7 +246,7 @@ class DrugController extends Controller
             'tablet_cost_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'strips_per_box' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'tablets_per_strip' => ['sometimes', 'nullable', 'integer', 'min:1'],
-            'quantity_in_boxes' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'quantity_in_boxes' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'expiry_date' => [$partial ? 'sometimes' : 'required', 'date', 'after:today'],
             'barcode' => [
                 'sometimes',
