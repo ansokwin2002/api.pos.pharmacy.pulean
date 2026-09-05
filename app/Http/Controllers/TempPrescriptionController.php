@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Helpers\HashidsHelper;
 use App\Models\TempPrescription;
+use App\Models\InvoiceSequence;
+use App\Services\StockService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TempPrescriptionController extends Controller
 {
@@ -78,6 +81,81 @@ class TempPrescriptionController extends Controller
         return response()->json([
             'message' => "{$deletedCount} temporary prescription(s) deleted successfully"
         ], 200);
+    }
+
+    /**
+     * Complete a prescription: generate invoice number, deduct stock, and save — all in one request.
+     */
+    public function complete(Request $request, StockService $stockService)
+    {
+        $validated = $request->validate([
+            'json_data' => 'required|array',
+            'json_data.type' => 'required|string',
+            'json_data.patient_id' => 'required|string',
+            'json_data.items' => 'required|array|min:1',
+            'deductions' => 'required|array|min:1',
+            'deductions.*.drug_id' => 'required|integer|exists:drugs,id',
+            'deductions.*.deducted_quantity' => 'required|integer|min:1',
+            'deductions.*.deduction_unit' => 'required|string|in:box,strip,tablet',
+        ]);
+
+        $jsonData = $validated['json_data'];
+        $deductions = $validated['deductions'];
+
+        DB::beginTransaction();
+        try {
+            // 1. Generate invoice number atomically (same logic as InvoiceController)
+            $dateKey = now()->format('Ymd');
+            $type = $jsonData['type'] ?? 'prescription';
+            $sequence = InvoiceSequence::where('type', $type)
+                ->where('date_key', $dateKey)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$sequence) {
+                $sequence = InvoiceSequence::create([
+                    'type' => $type,
+                    'date_key' => $dateKey,
+                    'current_number' => 0,
+                ]);
+            }
+
+            $sequence->increment('current_number');
+            $invoiceNumber = $dateKey . '-' . str_pad($sequence->current_number, 2, '0', STR_PAD_LEFT);
+
+            $jsonData['invoice_number'] = $invoiceNumber;
+            $jsonData['stock_deducted'] = true;
+            $jsonData['status'] = 'completed';
+
+            // 2. Deduct stock (does not commit — we handle the transaction)
+            $stockResult = $stockService->deduct($deductions, rollbackOnError: false);
+            if (!$stockResult['success']) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $stockResult['message'],
+                    'errors' => $stockResult['errors'],
+                ], 400);
+            }
+
+            // 3. Save prescription
+            $prescription = TempPrescription::create([
+                'json_data' => $jsonData,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Prescription completed successfully',
+                'invoice_number' => $invoiceNumber,
+                'data' => $prescription,
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to complete prescription',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
 
