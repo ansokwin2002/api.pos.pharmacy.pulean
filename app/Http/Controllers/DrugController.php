@@ -222,6 +222,112 @@ class DrugController extends Controller
         }
     }
 
+    public function adjustStock(Request $request)
+    {
+        $input = $request->all();
+        if (empty($input['adjustments']) && $request->isJson()) {
+            $input = $request->json()->all();
+        }
+
+        // 1. Validation
+        $validator = Validator::make($input, [
+            'adjustments' => ['required', 'array', 'min:1'],
+            'adjustments.*.drug_id' => ['required', 'integer', 'exists:drugs,id'],
+            'adjustments.*.quantity' => ['required', 'integer', 'not_in:0'],
+            'adjustments.*.unit' => ['required', 'string', 'in:box,strip,tablet'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $errors = [];
+        $results = [];
+
+        DB::beginTransaction();
+        try {
+            foreach ($input['adjustments'] as $adjustmentItem) {
+                $drug = Drug::find($adjustmentItem['drug_id']);
+                $quantity = (int) $adjustmentItem['quantity'];
+
+                if ($quantity === 0) {
+                    continue;
+                }
+
+                if ($drug->type_drug === 'box-only' && $adjustmentItem['unit'] !== 'box') {
+                    $errors[] = [
+                        'drug_id' => $drug->id,
+                        'message' => 'Invalid adjustment unit for drug ' . $drug->name . '. Only "box" unit is allowed.',
+                        'unit' => $adjustmentItem['unit'],
+                    ];
+                    continue;
+                }
+
+                // These defaults help avoid division by zero and ensure calculations work
+                $stripsPerBox = $drug->strips_per_box ?? 1;
+                $tabletsPerStrip = $drug->tablets_per_strip ?? 1;
+
+                if ($stripsPerBox === 0) $stripsPerBox = 1;
+                if ($tabletsPerStrip === 0) $tabletsPerStrip = 1;
+
+                $tabletsPerUnit = match ($adjustmentItem['unit']) {
+                    'tablet' => 1,
+                    'strip' => $tabletsPerStrip,
+                    'box' => $stripsPerBox * $tabletsPerStrip,
+                };
+
+                $tabletsDelta = $quantity * $tabletsPerUnit;
+                $newTotalTablets = $drug->total_tablets + $tabletsDelta;
+
+                // Only check sufficiency when deducting
+                if ($newTotalTablets < 0) {
+                    $errors[] = [
+                        'drug_id' => $drug->id,
+                        'message' => 'Insufficient stock for drug: ' . $drug->name,
+                        'available_tablets' => $drug->total_tablets,
+                        'requested_deduction_in_tablets' => abs($tabletsDelta),
+                    ];
+                    continue;
+                }
+
+                $drug->total_tablets = $newTotalTablets;
+                $drug->save();
+
+                $results[] = [
+                    'drug_id' => $drug->id,
+                    'message' => $quantity < 0 ? 'Stock adjusted (deducted)' : 'Stock adjusted (added)',
+                    'delta_tablets' => $tabletsDelta,
+                    'new_total_tablets' => $drug->total_tablets,
+                ];
+            }
+
+            if (!empty($errors)) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => 'Some adjustments failed due to insufficient stock',
+                    'failed_adjustments' => $errors,
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            DB::commit();
+            return response()->json([
+                'message' => 'All stock adjustments processed successfully',
+                'results' => $results,
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'An unexpected error occurred during stock adjustment',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private function validateData(Request $request, bool $partial = false): array
     {
         $rules = [

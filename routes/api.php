@@ -14,6 +14,7 @@ use App\Http\Controllers\SaleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CashDrawerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -78,6 +79,7 @@ Route::prefix('drugs')->group(function () {
     Route::get('/', [DrugController::class, 'index']);
     Route::post('/', [DrugController::class, 'store']);
     Route::match(['post', 'patch'], '/deduct-stock', [DrugController::class, 'deductStock']);
+    Route::match(['post', 'patch'], '/adjust-stock', [DrugController::class, 'adjustStock']);
     Route::get('/{drug}', [DrugController::class, 'show']);
     Route::get('/{drug}/detail/type_drug', [DrugController::class, 'getDetailsByTypeDrug']);
     Route::put('/{drug}', [DrugController::class, 'update']);
@@ -138,4 +140,14 @@ Route::prefix('sales')->group(function () {
     Route::get('/{sale}', [SaleController::class, 'show']);
     Route::put('/{sale}', [SaleController::class, 'update']);
     Route::patch('/{sale}', [SaleController::class, 'update']);
+});
+
+Route::prefix('cash-drawers')->group(function () {
+    Route::get('/today', [CashDrawerController::class, 'today']);
+    Route::get('/history', [CashDrawerController::class, 'history']);
+    Route::get('/adjustments', [CashDrawerController::class, 'adjustments']);
+    Route::get('/{id}', [CashDrawerController::class, 'show'])->where('id', '[0-9]+');
+    Route::post('/open', [CashDrawerController::class, 'open']);
+    Route::post('/movements', [CashDrawerController::class, 'movement']);
+    Route::post('/close', [CashDrawerController::class, 'close']);
 });

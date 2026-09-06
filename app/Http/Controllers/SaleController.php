@@ -137,6 +137,15 @@ class SaleController extends Controller
             $query->where('status', $status);
         }
 
+        if ($keyword = trim((string) $request->query('keyword'))) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('invoice_number', 'like', "%{$keyword}%")
+                    ->orWhere('customer_name', 'like', "%{$keyword}%")
+                    ->orWhere('customer_phone', 'like', "%{$keyword}%")
+                    ->orWhereHas('items', fn ($iq) => $iq->where('drug_name', 'like', "%{$keyword}%"));
+            });
+        }
+
         $paginated = $query->paginate($request->query('per_page', 15));
         return response()->json($paginated);
     }
@@ -179,14 +188,21 @@ class SaleController extends Controller
 
         $rows = $query->get();
 
+        $profits = $this->profitMap('day', null, null, $method);
+        foreach ($rows as $row) {
+            $row->profit = round($profits[$row->date] ?? 0, 2);
+        }
+
         $totalRevenue = $rows->sum('revenue');
         $totalOrders = $rows->sum('orders');
+        $totalProfit = $rows->sum('profit');
 
         return response()->json([
             'type' => 'daily',
             'rows' => $rows,
             'total_revenue' => round($totalRevenue, 2),
             'total_orders' => $totalOrders,
+            'total_profit' => round($totalProfit, 2),
         ]);
     }
 
@@ -210,12 +226,19 @@ class SaleController extends Controller
 
         $rows = $query->get();
 
+        $profits = $this->profitMap('month', null, null, $method, (int) $year);
+        foreach ($rows as $row) {
+            $key = sprintf('%04d-%02d', $row->year, $row->month);
+            $row->profit = round($profits[$key] ?? 0, 2);
+        }
+
         return response()->json([
             'type' => 'monthly',
             'year' => (int) $year,
             'rows' => $rows,
             'total_revenue' => round($rows->sum('revenue'), 2),
             'total_orders' => $rows->sum('orders'),
+            'total_profit' => round($rows->sum('profit'), 2),
         ]);
     }
 
@@ -238,11 +261,19 @@ class SaleController extends Controller
 
         $rows = $query->get();
 
+        $from = $request->query('from');
+        $to = $request->query('to');
+        $profits = $this->profitMap('year', $from, $to, $method);
+        foreach ($rows as $row) {
+            $row->profit = round($profits[(string) $row->year] ?? 0, 2);
+        }
+
         return response()->json([
             'type' => 'yearly',
             'rows' => $rows,
             'total_revenue' => round($rows->sum('revenue'), 2),
             'total_orders' => $rows->sum('orders'),
+            'total_profit' => round($rows->sum('profit'), 2),
         ]);
     }
 
@@ -266,6 +297,11 @@ class SaleController extends Controller
 
         $rows = $query->get();
 
+        $profits = $this->profitMap('day', $from, $to, $method);
+        foreach ($rows as $row) {
+            $row->profit = round($profits[$row->date] ?? 0, 2);
+        }
+
         return response()->json([
             'type' => 'range',
             'from' => $from,
@@ -273,7 +309,56 @@ class SaleController extends Controller
             'rows' => $rows,
             'total_revenue' => round($rows->sum('revenue'), 2),
             'total_orders' => $rows->sum('orders'),
+            'total_profit' => round($rows->sum('profit'), 2),
         ]);
+    }
+
+    public function profitMap(string $granularity, ?string $from = null, ?string $to = null, ?string $method = null, ?int $year = null): array
+    {
+        $query = SaleOrderItem::query()
+            ->leftJoin('sales_orders', 'sales_order_items.sales_order_id', '=', 'sales_orders.id')
+            ->leftJoin('drugs', 'sales_order_items.drug_id', '=', 'drugs.id');
+
+        if ($from) $query->whereDate('sales_orders.created_at', '>=', $from);
+        if ($to) $query->whereDate('sales_orders.created_at', '<=', $to);
+        if ($year) $query->whereYear('sales_orders.created_at', $year);
+        if ($method) $query->where('sales_orders.payment_method', $method);
+
+        $rows = $query->get([
+            'sales_order_items.unit_type',
+            'sales_order_items.price',
+            'sales_order_items.qty',
+            'sales_orders.created_at',
+            'drugs.id as drug_id',
+            'drugs.box_cost_price',
+            'drugs.strip_cost_price',
+            'drugs.tablet_cost_price',
+        ]);
+
+        $map = [];
+        foreach ($rows as $row) {
+            if ($row->unit_type === 'strip') {
+                $cost = $row->strip_cost_price;
+            } elseif ($row->unit_type === 'tablet') {
+                $cost = $row->tablet_cost_price;
+            } elseif ($row->unit_type === 'box') {
+                $cost = $row->box_cost_price;
+            } else {
+                continue;
+            }
+
+            if ($cost === null || $cost === '') continue;
+
+            $key = match ($granularity) {
+                'year' => (string) Carbon::parse($row->created_at)->year,
+                'month' => Carbon::parse($row->created_at)->format('Y-m'),
+                default => Carbon::parse($row->created_at)->format('Y-m-d'),
+            };
+            $profit = (float) $row->price - (float) $cost;
+            $map[$key] = ($map[$key] ?? 0) + $profit * (int) $row->qty;
+        }
+
+        return array_map(fn($v) => round($v, 2), $map);
     }
 
     protected function generateInvoiceNumber(): string
