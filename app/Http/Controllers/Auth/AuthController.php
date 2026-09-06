@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -49,7 +50,14 @@ class AuthController extends Controller
         $validated = $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
+            'cf_turnstile_response' => 'required|string',
         ]);
+
+        if (! $this->verifyTurnstile($validated['cf_turnstile_response'])) {
+            throw ValidationException::withMessages([
+                'cf_turnstile_response' => ['CAPTCHA verification failed. Please try again.'],
+            ]);
+        }
 
         $user = User::where('email', $validated['email'])->first();
 
@@ -71,6 +79,28 @@ class AuthController extends Controller
             'permissions' => $user->permissionNames(),
             'token' => $token,
         ], 200);
+    }
+
+    protected function verifyTurnstile(string $token): bool
+    {
+        $secret = env('CF_TURNSTILE_SECRET_KEY');
+
+        if (! $secret) {
+            return true;
+        }
+
+        try {
+            $response = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+                'secret' => $secret,
+                'response' => $token,
+            ]);
+
+            $data = $response->json();
+
+            return ($data['success'] ?? false) && ($data['action'] ?? '') === 'login';
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     public function logout(Request $request)
