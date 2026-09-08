@@ -15,6 +15,7 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CashDrawerController;
+use App\Http\Controllers\SystemSettingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -150,4 +151,9 @@ Route::prefix('cash-drawers')->group(function () {
     Route::post('/open', [CashDrawerController::class, 'open']);
     Route::post('/movements', [CashDrawerController::class, 'movement']);
     Route::post('/close', [CashDrawerController::class, 'close']);
+});
+
+Route::prefix('settings')->group(function () {
+    Route::get('/', [SystemSettingController::class, 'getSettings']);
+    Route::post('/', [SystemSettingController::class, 'updateSettings']);
 });

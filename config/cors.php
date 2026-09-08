@@ -15,13 +15,14 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => ['api/*', 'manageapi/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
         'https://punleukrek.online',
         'https://www.punleukrek.online',
+        'https://venerable-sorbet-5a7cde.netlify.app',
         'http://localhost:5177',
         'http://localhost:5173',
         'http://127.0.0.1:5177',
