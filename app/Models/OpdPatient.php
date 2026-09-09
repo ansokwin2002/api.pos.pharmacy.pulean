@@ -6,11 +6,11 @@ use App\Helpers\HashidsHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PodPatient extends Model
+class OpdPatient extends Model
 {
     use HasFactory;
 
-    protected $table = 'pod_patients';
+    protected $table = 'opd_patients';
 
     protected $fillable = [
         'name',

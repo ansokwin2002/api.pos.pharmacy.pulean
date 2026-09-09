@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PodPatient;
+use App\Models\OpdPatient;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Validator;
 
-class PodPatientController extends Controller
+class OpdPatientController extends Controller
 {
     public function index(Request $request)
     {
-        $query = PodPatient::query();
+        $query = OpdPatient::query();
 
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
@@ -21,33 +20,36 @@ class PodPatientController extends Controller
             });
         }
 
+        // Always show the most recently created patients first
+        $query->orderByDesc('created_at')->orderByDesc('id');
+
         $perPage = (int) $request->query('per_page', 15);
         return response()->json($query->paginate($perPage));
     }
 
-    public function show(PodPatient $podPatient)
+    public function show(OpdPatient $opdPatient)
     {
-        return response()->json($podPatient);
+        return response()->json($opdPatient);
     }
 
     public function store(Request $request)
     {
         $data = $this->validateData($request);
-        $podPatient = PodPatient::create($data);
-        return response()->json($podPatient, Response::HTTP_CREATED);
+        $opdPatient = OpdPatient::create($data);
+        return response()->json($opdPatient, Response::HTTP_CREATED);
     }
 
-    public function update(Request $request, PodPatient $podPatient)
+    public function update(Request $request, OpdPatient $opdPatient)
     {
         $data = $this->validateData($request, partial: true);
-        $podPatient->fill($data);
-        $podPatient->save();
-        return response()->json($podPatient);
+        $opdPatient->fill($data);
+        $opdPatient->save();
+        return response()->json($opdPatient);
     }
 
-    public function destroy(PodPatient $podPatient)
+    public function destroy(OpdPatient $opdPatient)
     {
-        $podPatient->delete();
+        $opdPatient->delete();
         return response()->json(null, Response::HTTP_NO_CONTENT);
     }
 

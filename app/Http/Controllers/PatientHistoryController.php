@@ -19,6 +19,9 @@ class PatientHistoryController extends Controller
             $query->where('type', 'like', "%{$type}%");
         }
 
+        // Always show the most recently created history first
+        $query->orderByDesc('created_at')->orderByDesc('id');
+
         $perPage = (int) $request->query('per_page', 15);
         return response()->json($query->paginate($perPage));
     }

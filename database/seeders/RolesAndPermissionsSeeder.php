@@ -20,7 +20,7 @@ class RolesAndPermissionsSeeder extends Seeder
         ['sales.list', 'Sales List', 'sales', 20],
         ['sales.report', 'Sales Report', 'sales', 30],
         // Patients
-        ['patient.pod', 'Pod Patients', 'patient', 40],
+        ['patient.opd', 'OPD Patients', 'patient', 40],
         ['patient.list', 'Patient List', 'patient', 50],
         ['patient.history', 'Patient Histories', 'patient', 60],
         ['patient.temp-prescription', 'Temp Prescriptions', 'patient', 70],
@@ -52,12 +52,24 @@ class RolesAndPermissionsSeeder extends Seeder
         'doctor' => [
             'Doctor',
             'Patient care and prescriptions',
-            ['patient.pod', 'patient.list', 'patient.history', 'patient.temp-prescription', 'drug.list', 'brand.list'],
+            ['patient.opd', 'patient.list', 'patient.history', 'patient.temp-prescription', 'drug.list', 'brand.list'],
         ],
     ];
 
     public function run(): void
     {
+        // Migrate legacy 'patient.pod' permission to 'patient.opd' in place so
+        // existing role_permission pivot references keep working.
+        $legacyPod = Permission::where('name', 'patient.pod')->first();
+        if ($legacyPod) {
+            $legacyPod->update([
+                'name' => 'patient.opd',
+                'display_name' => 'OPD Patients',
+                'module' => 'patient',
+                'sort' => 40,
+            ]);
+        }
+
         $permissionModels = [];
         foreach ($this->permissions as [$name, $displayName, $module, $sort]) {
             $permissionModels[$name] = Permission::updateOrCreate(

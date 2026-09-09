@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PodPatientController;
+use App\Http\Controllers\OpdPatientController;
 use App\Http\Controllers\DrugController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\Auth\AuthController;
@@ -67,13 +67,13 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::post('/users/{user}/password', [UserController::class, 'resetPassword']);
 });
 
-Route::prefix('pod-patients')->group(function () {
-    Route::get('/', [PodPatientController::class, 'index']);
-    Route::post('/', [PodPatientController::class, 'store']);
-    Route::get('/{podPatient}', [PodPatientController::class, 'show']);
-    Route::put('/{podPatient}', [PodPatientController::class, 'update']);
-    Route::patch('/{podPatient}', [PodPatientController::class, 'update']);
-    Route::delete('/{podPatient}', [PodPatientController::class, 'destroy']);
+Route::prefix('opd-patients')->group(function () {
+    Route::get('/', [OpdPatientController::class, 'index']);
+    Route::post('/', [OpdPatientController::class, 'store']);
+    Route::get('/{opdPatient}', [OpdPatientController::class, 'show']);
+    Route::put('/{opdPatient}', [OpdPatientController::class, 'update']);
+    Route::patch('/{opdPatient}', [OpdPatientController::class, 'update']);
+    Route::delete('/{opdPatient}', [OpdPatientController::class, 'destroy']);
 });
 
 Route::prefix('drugs')->group(function () {

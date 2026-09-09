@@ -22,7 +22,7 @@ class HashidsHelper
     private static function instance(): Hashids
     {
         if (self::$instance === null) {
-            $salt = config('app.key') ?: 'pod_patient_salt';
+            $salt = config('app.key') ?: 'opd_patient_salt';
             self::$instance = new Hashids($salt, 12);
         }
         return self::$instance;

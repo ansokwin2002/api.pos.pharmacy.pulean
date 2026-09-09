@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('pod_patients', function (Blueprint $table) {
-            $table->string('age')->nullable()->change();
+        Schema::table('opd_patients', function (Blueprint $table) {
+            $table->dropColumn(['signs_of_life', 'symptom', 'diagnosis']);
         });
     }
 
@@ -21,8 +21,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('pod_patients', function (Blueprint $table) {
-            $table->unsignedInteger('age')->nullable()->change();
+        Schema::table('opd_patients', function (Blueprint $table) {
+            $table->string('signs_of_life')->nullable();
+            $table->string('symptom')->nullable();
+            $table->string('diagnosis')->nullable();
         });
     }
 };
