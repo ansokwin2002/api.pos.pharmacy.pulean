@@ -14,11 +14,13 @@ class SystemSetting extends Model
         'system_logo',
         'recharge_audit',
         'tax_rate',
+        'doctor_fee',
     ];
 
     protected $casts = [
         'recharge_audit' => 'boolean',
         'tax_rate' => 'decimal:2',
+        'doctor_fee' => 'decimal:2',
     ];
 
     /**

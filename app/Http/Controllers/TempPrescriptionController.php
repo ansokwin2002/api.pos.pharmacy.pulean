@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Helpers\HashidsHelper;
 use App\Models\TempPrescription;
 use App\Models\InvoiceSequence;
+use App\Models\SaleOrder;
+use App\Models\SaleOrderItem;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -141,6 +143,37 @@ class TempPrescriptionController extends Controller
             $prescription = TempPrescription::create([
                 'json_data' => $jsonData,
             ]);
+
+            // 4. Create a sale record so OPD prescriptions also appear in the sale list
+            $itemsSubtotal = 0;
+            foreach ($jsonData['items'] as $item) {
+                $itemsSubtotal += (float) ($item['price'] ?? 0) * (float) ($item['qty'] ?? 0);
+            }
+            $total = $itemsSubtotal + (float) ($jsonData['doctor_fee'] ?? 0);
+
+            $saleOrder = SaleOrder::create([
+                'invoice_number' => $invoiceNumber,
+                'customer_name' => ($jsonData['patient_name'] ?? null) ?: 'Walk-in Customer',
+                'customer_phone' => $jsonData['patient_telephone'] ?? null,
+                'payment_method' => 'cash',
+                'subtotal' => round($itemsSubtotal, 2),
+                'discount' => 0,
+                'tax' => 0,
+                'total' => round($total, 2),
+                'status' => 'completed',
+            ]);
+
+            foreach ($jsonData['items'] as $item) {
+                SaleOrderItem::create([
+                    'sales_order_id' => $saleOrder->id,
+                    'drug_id' => isset($item['drug_id']) ? (int) $item['drug_id'] : null,
+                    'drug_name' => $item['drug_name'],
+                    'unit_type' => $item['unit_type'] ?? null,
+                    'price' => (float) ($item['price'] ?? 0),
+                    'qty' => (int) ($item['qty'] ?? 0),
+                    'subtotal' => round((float) ($item['price'] ?? 0) * (float) ($item['qty'] ?? 0), 2),
+                ]);
+            }
 
             DB::commit();
 

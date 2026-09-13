@@ -46,7 +46,8 @@ class PatientHistoryController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $patientHistory = PatientHistory::findOrFail($id);
+        return response()->json($patientHistory);
     }
 
     /**
@@ -54,7 +55,23 @@ class PatientHistoryController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $patientHistory = PatientHistory::findOrFail($id);
+
+        $validated = $request->validate([
+            'type' => 'sometimes|string',
+            'json_data' => 'sometimes',
+        ]);
+
+        $data = $request->only(['type']);
+
+        if ($request->has('json_data')) {
+            $jsonData = $request->input('json_data');
+            $data['json_data'] = is_array($jsonData) ? json_encode($jsonData) : $jsonData;
+        }
+
+        $patientHistory->update($data);
+
+        return response()->json($patientHistory);
     }
 
     /**
@@ -62,7 +79,10 @@ class PatientHistoryController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $patientHistory = PatientHistory::findOrFail($id);
+        $patientHistory->delete();
+
+        return response()->json(['message' => 'Deleted successfully']);
     }
 
     /**

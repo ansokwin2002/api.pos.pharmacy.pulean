@@ -67,28 +67,36 @@ class SystemSettingController extends Controller
         return response()->json([
             'data' => [
                 'tax_rate' => (float) $setting->tax_rate,
+                'doctor_fee' => (float) $setting->doctor_fee,
             ],
         ]);
     }
 
     /**
      * POST /api/settings
-     * Updates the tax rate setting.
+     * Updates the tax rate and doctor fee settings.
      */
     public function updateSettings(Request $request)
     {
         $data = $request->validate([
-            'tax_rate' => ['required', 'numeric', 'min:0', 'max:100'],
+            'tax_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'doctor_fee' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $setting = SystemSetting::row();
-        $setting->tax_rate = $data['tax_rate'];
+        if (array_key_exists('tax_rate', $data)) {
+            $setting->tax_rate = $data['tax_rate'];
+        }
+        if (array_key_exists('doctor_fee', $data)) {
+            $setting->doctor_fee = $data['doctor_fee'];
+        }
         $setting->save();
 
         return response()->json([
             'message' => 'Settings updated successfully.',
             'data' => [
                 'tax_rate' => (float) $setting->tax_rate,
+                'doctor_fee' => (float) $setting->doctor_fee,
             ],
         ]);
     }
