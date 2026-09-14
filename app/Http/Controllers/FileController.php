@@ -19,7 +19,12 @@ class FileController extends Controller
         $file = $request->file('file');
         $path = $file->store('uploads', 'public');
 
-        $url = rtrim($request->root(), '/') . '/storage/' . ltrim($path, '/');
+        // Static files are served from the public storage symlink (public/storage).
+        // $request->root() may include the Laravel front controller (e.g.
+        // "https://host/public/index.php"); that must be removed so the browser
+        // requests the real file instead of routing it through Laravel (404).
+        $base = rtrim(str_replace('/index.php', '', $request->root()), '/');
+        $url = $base . '/storage/' . ltrim($path, '/');
 
         return response()->json([
             'code' => '1',
