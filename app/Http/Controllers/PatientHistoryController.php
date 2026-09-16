@@ -44,19 +44,16 @@ class PatientHistoryController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(PatientHistory $patientHistory)
     {
-        $patientHistory = PatientHistory::findOrFail($id);
         return response()->json($patientHistory);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, PatientHistory $patientHistory)
     {
-        $patientHistory = PatientHistory::findOrFail($id);
-
         $validated = $request->validate([
             'type' => 'sometimes|string',
             'json_data' => 'sometimes',
@@ -77,9 +74,8 @@ class PatientHistoryController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(PatientHistory $patientHistory)
     {
-        $patientHistory = PatientHistory::findOrFail($id);
         $patientHistory->delete();
 
         return response()->json(['message' => 'Deleted successfully']);

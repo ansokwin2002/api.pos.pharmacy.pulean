@@ -17,9 +17,11 @@ class SaleController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'invoice_number' => ['nullable', 'string', 'max:255'],
             'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:50'],
             'payment_method' => ['required', 'string', 'in:' . implode(',', self::PAYMENT_METHODS)],
+            'status' => ['nullable', 'string', 'in:completed,pending,cancelled,refunded,deleted'],
             'subtotal' => ['required', 'numeric', 'min:0'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'tax' => ['nullable', 'numeric', 'min:0'],
@@ -32,13 +34,14 @@ class SaleController extends Controller
             'items.*.qty' => ['required', 'integer', 'min:1'],
         ]);
 
-        $invoiceNumber = $this->generateInvoiceNumber();
+        $invoiceNumber = $data['invoice_number'] ?? $this->generateInvoiceNumber();
 
         $order = SaleOrder::create([
             'invoice_number' => $invoiceNumber,
             'customer_name' => $data['customer_name'] ?: 'Walk-in Customer',
             'customer_phone' => $data['customer_phone'] ?? null,
             'payment_method' => $data['payment_method'],
+            'status' => $data['status'] ?? 'completed',
             'subtotal' => $data['subtotal'],
             'discount' => $data['discount'] ?? 0,
             'tax' => $data['tax'] ?? 0,
@@ -75,7 +78,7 @@ class SaleController extends Controller
             'discount' => ['nullable', 'numeric', 'min:0'],
             'tax' => ['nullable', 'numeric', 'min:0'],
             'total' => ['required', 'numeric', 'min:0'],
-            'status' => ['nullable', 'string', 'in:completed,pending,cancelled,refunded'],
+            'status' => ['nullable', 'string', 'in:completed,pending,cancelled,refunded,deleted'],
             'items' => ['sometimes', 'array'],
             'items.*.drug_name' => ['required_with:items', 'string', 'max:255'],
             'items.*.drug_id' => ['nullable', 'integer', 'exists:drugs,id'],
@@ -135,6 +138,8 @@ class SaleController extends Controller
 
         if ($status = $request->query('status')) {
             $query->where('status', $status);
+        } else {
+            $query->where('status', '!=', 'deleted');
         }
 
         if ($keyword = trim((string) $request->query('keyword'))) {
@@ -178,6 +183,7 @@ class SaleController extends Controller
                 DB::raw("COUNT(*) as orders"),
                 DB::raw("SUM(total) as revenue")
             )
+            ->where('status', '!=', 'deleted')
             ->groupBy(DB::raw("DATE(created_at)"))
             ->orderByDesc('date')
             ->limit($limit);
@@ -218,6 +224,7 @@ class SaleController extends Controller
                 DB::raw("COUNT(*) as orders"),
                 DB::raw("SUM(total) as revenue")
             )
+            ->where('status', '!=', 'deleted')
             ->whereYear('created_at', $year)
             ->groupBy(DB::raw("YEAR(created_at)"), DB::raw("MONTH(created_at)"))
             ->orderBy('month');
@@ -252,6 +259,7 @@ class SaleController extends Controller
                 DB::raw("COUNT(*) as orders"),
                 DB::raw("SUM(total) as revenue")
             )
+            ->where('status', '!=', 'deleted')
             ->groupBy(DB::raw("YEAR(created_at)"))
             ->orderBy('year');
 
@@ -289,6 +297,7 @@ class SaleController extends Controller
                 DB::raw("COUNT(*) as orders"),
                 DB::raw("SUM(total) as revenue")
             )
+            ->where('status', '!=', 'deleted')
             ->whereBetween('created_at', [$from . ' 00:00:00', $to . ' 23:59:59'])
             ->groupBy(DB::raw("DATE(created_at)"))
             ->orderBy('date');
@@ -317,7 +326,8 @@ class SaleController extends Controller
     {
         $query = SaleOrderItem::query()
             ->leftJoin('sales_orders', 'sales_order_items.sales_order_id', '=', 'sales_orders.id')
-            ->leftJoin('drugs', 'sales_order_items.drug_id', '=', 'drugs.id');
+            ->leftJoin('drugs', 'sales_order_items.drug_id', '=', 'drugs.id')
+            ->where('sales_orders.status', '!=', 'deleted');
 
         if ($from) $query->whereDate('sales_orders.created_at', '>=', $from);
         if ($to) $query->whereDate('sales_orders.created_at', '<=', $to);
